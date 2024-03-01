@@ -20,7 +20,7 @@ feature_row:
   - image_path: /images/disropt.jpg
     alt: "DISROPT"
     title: "DISROPT"
-    excerpt: "Here, we will delve into DISROPT basics and the implementation of the 'Charging of Plug-in Electric Vehicles' scenario."
+    excerpt: "Here, we will delve into DISROPT basics and the implementation of the 'Planning of Battery Charging for Electric Robots' scenario."
     # excerpt: "Everything from the menus, sidebars, comments, and more can be configured or set with YAML Front Matter."
     url: "/disropt"
     btn_class: "btn--primary"
