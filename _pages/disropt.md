@@ -87,14 +87,14 @@ In the distributed framework of **DISROPT**, the `Problem` class is mainly meant
 
 Generic (convex) nonlinear problems of the form
 
-$$\begin{eqnarray}
+$$\begin{align}
 
     \text{minimize } & f(x) \\
 
     \text{subject to } & g(x) \leq 0 \\
 
                         & h(x) = 0
-\end{eqnarray}$$
+\end{align}$$
 
 are solved through the cvxpy solver (when possible), or with the cvxopt solver, while more structured problems (LPs and QPs) can be solved through other solvers (osqp and glpk). Mixed-Integer Problems can be solved using gurobi.
 
@@ -139,127 +139,203 @@ In **DISROPT**, there are many implemented distributed optimization algorithms. 
 for a specific distributed optimization set-up. We refer the reader to the [DISROPT documentation page](https://disropt.readthedocs.io/en/latest/index.html) for a detailed explanation.
 
 
-## Constraint-coupled: charging of Plug-in Electric Vehicles (PEVs)
+## Planning of Battery Charging for Electric Robots
 
-
-We now consider the problem of determining an optimal overnight charging schedule for a fleet of Plug-in Electric Vehicles (PEVs).
+In the following, we
+consider a charging scheduling problem in a fleet of $$N$$ battery-operated
+robots drawing power from a common infrastructure. We refer the reader to the paper
+for additional details.  
 
 ### Problem formulation
 
-Suppose there is a fleet of `N` PEVs (agents) that must be charged by drawing power from
-the same electricity distribution network. Assuming the vehicles are connected to the grid
-at a certain time (e.g., at midnight), the goal is to determine an optimal overnight schedule
-to charge the vehicles, since the electricity price varies during the charging period.
 
-Formally, we divide the entire charging period into a total of :math:`T = 24` time slots,
-each one of duration :math:`\Delta T = 20` minutes. For each PEV :math:`i \in \{1, \ldots, N\}`,
-the charging power at time step :math:`k` is equal to :math:`P_i u_i(k)`, where :math:`u_i(k) \in [0, 1]`
-is the input to the system and :math:`P_i` is the maximum charging power that can be fed to the
-:math:`i`-th vehicle.
+The considered schedule has to satisfy
+local requirements for each robot, e.g., the final state of charge (SoC). The
+schedule also has to satisfy power constraints, e.g., limits on the maximum
+power flow. We assume that charging can be interrupted and resumed.
+The overall charging period $$T$$ is discretized into $$d$$ time steps. For each
+robot $$i \in \{1,\ldots,N\}$$, let $$u_i\in[0,1]^d$$ be a set of decision variables handling
+the charging of the robot. That is robot $$i$$ charges at time step $$k$$ with a
+certain charge rate between $$0$$ (no charging) and $$1$$.
+The $$i$$-th battery charge level during time is denoted by $$e_i\in\mathbb{R}^d$$. The
+$$i$$-th battery initial SoC is $$E_i^\text{init}$$ and, at the end of the charging
+period, its SoC must be at least $$E_i^\text{ref}$$.
+We denote by $$E_i^\text{min}$$ and $$E_i^\text{max}$$ the battery's capacity limits, by $$P_i$$ the maximum charging power that can be fed to the $$i$$-th robot,
+and by $$P^{\text{max}}$$ the maximum power flow that robots can draw from the
+infrastructure.
+Let $$C_u^k\in\mathbb{R}$$ be the price for electricity consumption at time slot $$k$$.
+Let $$\mathbb{T}$$ denote the set $$\{0,\dots,T-1\}$$.  The objective is to minimize
+the cost consumption. Then, the optimization problem can be cast as
 
-System model
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The state of charge of the :math:`i`-th battery is denoted by :math:`e_i(k)`,
-its initial state of charge is :math:`E_i^\text{init}`, which by the end of the charging
-period has to attain at least :math:`E_i^\text{ref}`. The charging conversion efficiency
-is denoted by :math:`\zeta_i^\text{u} \triangleq 1 - \zeta_i`, where :math:`\zeta_i > 0`
-encodes the conversion losses. The battery's capacity limits are denoted by
-:math:`E_i^\text{min}, E_i^\text{max} \ge 0`. The system's dynamics are therefore given by
-
-.. math::
-
-  & \: e_i(0) = E_i^\text{init}
+$$
+  \begin{align}
+    \underset{\{e_i,u_i\}_{i=1}^N}{\text{min}} & \sum\limits_{i=1}^N \sum_{k=0}^{T-1} P_i C_u^k  u_i^k  \\
+    \text{subj. to }
+    & \sum\limits_{i=1}^N P_iu_i^k \leq P^{\text{max}} & \forall k\in\mathbb{T}
+    \\
+    & e_i^0 = E_i^\text{init} & \forall i\in\{1,\ldots,N\}
+    \\
+	& e_i^{k+1}= e_i^k +\!P_i \Delta T u_i^k &  \forall i\in\{1,\ldots,N\}, k\in\mathbb{T}
   \\
-  & \: e_i(k+1) = e_i(k) + P_i \Delta T \zeta_i^u u_i(k), \hspace{0.5cm} k \in \{0, \ldots, T-1\}
-  \\
-  & \: e_i(T) \ge E_i^\text{ref}
-  \\
-  & \: E_i^\text{min} \le e_i(k) \le E_i^\text{max}, \hspace{2.88cm} k \in \{1, \ldots, T\}
-  \\
-  & \: u_i(k) \in [0,1], \hspace{4.47cm} k \in \{0, \ldots, T-1\}.
+    & e_i^T \geq E_i^\text{ref} & \forall i\in\{1,\ldots,N\}
+    \\
+    & E_i^\text{min}1_d \leq e_i \leq E_i^\text{max}1_d & \forall i\in\{1,\ldots,N\}
+    \\
+   & u_i \in [0,1]^d & \forall i\in\{1,\ldots,N\}.
+  \end{align} 
+$$
 
-To model congestion avoidance of the power grid, we further consider the following (linear)
-coupling constraints among all the variables
+## DISROPT implementation
 
-.. math::
+### Implementation of the optimization problem
 
-  \sum_{i=1}^N P_i u_i(k) \le P^\text{max}, \hspace{1cm} k \in \{0, \ldots, T-1\},
+We refer the reader to the tutorial paper for details on the data generation model.
 
-where :math:`P^\text{max}` is the maximum power that the be drawn from the grid.
+      import numpy as np
+      from numpy.random import uniform as rnd
+      from mpi4py import MPI
+      from disropt.agents import Agent
+      from disropt.functions import Variable
+      from disropt.problems import ConstraintCoupledProblem
 
-Optimization problem
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-We assume that, at each time slot :math:`k`, electricity has unit cost equal to
-:math:`C^\text{u}(k)`. Since the goal is to minimize the overall consumed energy price,
-the global optimization problem can be posed as
+      # get MPI info
+      NN = MPI.COMM_WORLD.Get_size()
+      agent_id = MPI.COMM_WORLD.Get_rank()
 
-.. math::
+      #### Common parameters
 
-  \min_{u, e} \: & \: \sum_{i=1}^N \sum_{k=0}^{T-1} C^\text{u}(k) P_i u_i(k)
-  \\
-  \text{subject to} \: & \: \sum_{i=1}^N P_i u_i(k) \le P^\text{max}, \hspace{1cm} k \in \{0, \ldots, T-1\}
-  \\
-  & \: (u_i, e_i) \in X_i, \hspace{2.4cm} \: i \in \{1, \ldots, N\}.
+      TT = 24 # number of time windows
+      DeltaT = 20 # minutes
+      PP_max = 0.5 * NN # kWh
+      CC_u = rnd(19,35, (TT, 1)) # EUR/MWh - TT entries
 
-The problem is recognized to be a :ref:`constraint-coupled <tutorial>` problem,
-with local variables :math:`x_i` equal to the stack of :math:`e_i(k), u_i(k)` for :math:`k \in \{0, \ldots, T-1\}`,
-plus :math:`e_i(T)`. The local objective function is equal to
+      np.random.seed(10*agent_id)
 
-.. math::
+      PP = rnd(3,5) # kW
+      EE_min = 1 # kWh
+      EE_max = rnd(8,16) # kWh
+      EE_init = rnd(0.2,0.5) * EE_max # kWh
+      EE_ref = rnd(0.55,0.8) * EE_max # kWh
+      zeta_u = 1 - rnd(0.015, 0.075) # pure number
 
-  f_i(x_i) = \sum_{k=0}^{T-1} P_i u_i(k) C^\text{u}(k),
+      # normalize unit measures
+      DeltaT = DeltaT/60 # minutes  -> hours
+      CC_u = CC_u/1e3    # Euro/MWh -> Euro/KWh
 
-the local constraint set is equal to
+      # optimization variables
+      z = Variable(2*TT + 1) # stack of e (state of charge) and u (input charging power)
+      e = np.vstack((np.eye(TT+1), np.zeros((TT, TT+1)))) @ z # T+1 components (from 0 to T)
+      u = np.vstack((np.zeros((TT+1, TT)), np.eye(TT))) @ z   # T components (from 0 to T-1)
 
-.. math::
+      # objective function
+      obj_func = PP * (CC_u @ u)
 
-  X_i = \{(e_i, u_i) \in \mathbb{R}^{T+1} \times \mathbb{R}^T \text{ such that local dynamics is satisfied} \}
+      # coupling function
+      coupling_func = PP*u - (PP_max/NN)
 
-and the local coupling constraint function :math:`g_i : \mathbb{R}^{2T+1} \rightarrow \mathbb{R}^T` has components
+      # local constraints
+      e_0 = np.zeros((TT+1, 1))
+      e_T = np.zeros((TT+1, 1))
+      e_0[0] = 1
+      e_T[TT] = 1
+      constr = [e_0 @ e == EE_init, e_T @ e >= EE_ref] # feedback and reference constraints
 
-.. math::
+      for kk in range(0, TT):
+          e_cur = np.zeros((TT+1, 1))
+          u_cur = np.zeros((TT, 1))
+          e_new = np.zeros((TT+1, 1))
+          e_cur[kk] = 1
+          u_cur[kk] = 1
+          e_new[kk+1] = 1
+          constr.append(e_new @ e == e_cur @ e + PP*DeltaT*zeta_u*u_cur @ u) # dynamics
+          constr.extend([u_cur @ u <= 1, u_cur @ u >= 0]) # input constraints
+          constr.extend([e_new @ e <= EE_max, e_new @ e >= EE_min]) # state constraints
 
-  g_{i,k}(x_i) = P_i u_i(k) - \frac{P^\text{max}}{N}, \hspace{1cm} k \in \{0, \ldots, T-1\}.
-
-The goal is to make each agent compute its portion :math:`x_i^\star = (e_i^\star, u_i^\star)`
-of an optimal solution :math:`(x_1^\star, \ldots, x_N^\star)` of the optimization problem,
-so that all of them can know their own assignment of the optimal charging schedule, given by
-:math:`(u_i^\star(0), \ldots, u_i^\star(T-1))`.
+      pb = ConstraintCoupledProblem(obj_func, constr, coupling_func)
 
 
-### Data generation model
+### Implementation of graph-related data and network agent 
 
-The data are generated according to table in [VuEs16]_ (see Appendix).
 
-.. Simulation results
-.. --------------------------------------
+      from disropt.agents import Agent
+      from disropt.utils.graph_constructor import binomial_random_graph, metropolis_hastings, binomial_random_graph_sequence
 
-.. We run a comparative study with :math:`N = 50` agents with the following distributed algorithms:
+      # Generate a common graph (everyone uses the same seed)
+      Adj = binomial_random_graph(NN, p=0.2, seed=1)
+      W = metropolis_hastings(Adj)
 
-.. * :ref:`Distributed Dual Subgradient <alg_dual_subgradient>`
-.. * :ref:`Distributed Primal Decomposition <alg_primal_decomp>`
+      # local agent and problem
+      agent = Agent(
+          in_neighbors=np.nonzero(Adj[agent_id, :])[0].tolist(),
+          out_neighbors=np.nonzero(Adj[:, agent_id])[0].tolist(),
+          in_weights=W[agent_id, :].tolist())
 
-.. For the Distributed Primal Decomposition algorithm, we choose a sufficiently large parameter :math:`M = 100`.
-.. As for the step-size, we use for both algorithms the diminishing rule :math:`\alpha^k = \frac{1}{k^{0.6}}`.
+      pb = ConstraintCoupledProblem(obj_func, constr, coupling_func)
+      agent.set_problem(pb)
 
-.. In the following figures we show the evolution of the two algorithms...... TODO figures:
+### Instantiate distributed optimization algorithms
 
-.. * cost convergence
-.. * coupling constraint value
+      from disropt.algorithms import PrimalDecomposition
+      from dualdecomposition import DualDecomposition
 
-### Complete code
---------------------------------------
-.. _pev_code:
+      # instantiate the algorithms
 
-.. literalinclude:: ../../../../examples/setups/pev/launcher.py
-  :caption: examples/setups/pev/launcher.py
+      y0 = 10*np.random.rand(TT, 1)
+      mu0 = 10*np.random.rand(TT, 1)
 
-.. literalinclude:: ../../../../examples/setups/pev/results.py
-  :caption: examples/setups/pev/results.py
+      theothers = [i for i in range(NN) if i != agent_id]
+      y_others = agent.communicator.neighbors_exchange(y0, theothers, theothers, False)
+      y_others[agent_id] = y0
+      y_mean = sum([x for _, x in y_others.items()])/NN
+      y0 -= y_mean
 
-The two files can be executed by issuing the following commands in the example folder:
+      dds = DualDecomposition(agent=agent,
+                                  initial_condition=mu0,
+                                  enable_log=True)
 
-.. code-block:: bash
+      dpd = PrimalDecomposition  (agent=agent,
+                                  initial_condition=y0,
+                                  enable_log=True)
 
-  > mpirun -np 50 --oversubscribe python launcher.py
-  > python results.py
+      num_iterations = 1000
+
+      # define a stepsize generator
+      def step_gen(k): 
+          return 1/((k+1)**0.6)
+
+      # run the algorithms
+      if agent_id == 0:
+          print("Distributed dual subgradient")
+      _, dds_seq = dds.run(iterations=num_iterations, stepsize=step_gen, verbose=True)
+
+      if agent_id == 0:
+          print("Distributed primal decomposition")
+      dpd_seq, _, _ = dpd.run(iterations=num_iterations, stepsize=step_gen, M=30.0, verbose=True)
+
+### Save the data
+
+    # save information
+    if agent_id == 0:
+        with open('info.pkl', 'wb') as output:
+            pickle.dump({'N': NN, 'iterations': num_iterations, 'n_coupling': TT}, output, pickle.HIGHEST_PROTOCOL)
+
+    with open('agent_{}_objective_func.pkl'.format(agent_id), 'wb') as output:
+        pickle.dump(obj_func, output, pickle.HIGHEST_PROTOCOL)
+    with open('agent_{}_coupling_func.pkl'.format(agent_id), 'wb') as output:
+        pickle.dump(coupling_func, output, pickle.HIGHEST_PROTOCOL)
+    with open('agent_{}_local_constr.pkl'.format(agent_id), 'wb') as output:
+        pickle.dump(constr, output, pickle.HIGHEST_PROTOCOL)
+    np.save("agent_{}_seq_dds.npy".format(agent_id), dds_seq)
+    np.save("agent_{}_seq_dpd.npy".format(agent_id), dpd_seq)
+
+## Run the example
+
+We refer the reader to the git page for the complete code and for information on how to install DISROPT.
+
+In oder to launch the distributed optimization with $$N=50$$ robots, it is sufficient to run
+
+      mpirun -np 50 --oversubscribe python launcher.py
+
+To plot the results instead
+
+      python results.py
