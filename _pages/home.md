@@ -4,7 +4,7 @@ permalink: /
 title: <p style="font-size:42px;">A Tutorial on Distributed Optimization for <br> Cooperative Robotics</p>
 header:
   overlay_color: "#5e616c"
-  overlay_image: /images/test.png
+  overlay_image: /images/home_banner.png
 #   actions:
 #     - label: "<i class='fas fa-download'></i> Install now"
 #       url: "/docs/quick-start-guide/"
