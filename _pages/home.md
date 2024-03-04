@@ -64,7 +64,6 @@ You can read our paper [here](https://arxiv.org/pdf/2309.04257).
 
 *** -->
 
-$$N$$
 
 # Accompanying Video
 
