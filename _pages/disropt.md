@@ -87,14 +87,11 @@ In the distributed framework of **DISROPT**, the `Problem` class is mainly meant
 Generic (convex) nonlinear problems of the form
 
 $$
-\begin{align}
-
-    \text{minimize } & f(x) \\
-
-    \text{subject to } & g(x) \leq 0 \\
-
-                        & h(x) = 0
-\end{align}
+    \begin{align}
+        \text{minimize } & f(x) \\
+        \text{subject to } & g(x) \leq 0 \\
+                            & h(x) = 0
+    \end{align}
 $$
 
 are solved through the cvxpy solver (when possible), or with the cvxopt solver, while more structured problems (LPs and QPs) can be solved through other solvers (osqp and glpk). Mixed-Integer Problems can be solved using gurobi.
