@@ -4,10 +4,10 @@ layout: single
 author_profile: false
 permalink: /disropt
 title: "DISROPT"
-defaults:
-  - scope:
-      type: pages
-    values:
+# defaults:
+#   - scope:
+#       type: pages
+#     values:
 toc: true
 toc_sticky: true
 ---
