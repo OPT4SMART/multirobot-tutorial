@@ -6,7 +6,6 @@ permalink: /disropt
 title: "DISROPT"
 defaults:
   - scope:
-      path: ""
       type: pages
     values:
 toc: true
@@ -87,14 +86,16 @@ In the distributed framework of **DISROPT**, the `Problem` class is mainly meant
 
 Generic (convex) nonlinear problems of the form
 
-$$\begin{align}
+$$
+\begin{align}
 
     \text{minimize } & f(x) \\
 
     \text{subject to } & g(x) \leq 0 \\
 
                         & h(x) = 0
-\end{align}$$
+\end{align}
+$$
 
 are solved through the cvxpy solver (when possible), or with the cvxopt solver, while more structured problems (LPs and QPs) can be solved through other solvers (osqp and glpk). Mixed-Integer Problems can be solved using gurobi.
 
@@ -105,7 +106,7 @@ The `Agent` class is meant to represent the local computing units that collabora
 Agents are instantiated by defining their in/out-neighbors and the weights they assign their neighbors. For example, consider the following network
 
 <center>
-<img src="../images/network.png">
+<img src="/images/network.png">
 </center>
 
 Then, agent 0 is defined as
