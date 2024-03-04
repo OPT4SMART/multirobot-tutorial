@@ -339,3 +339,7 @@ In oder to launch the distributed optimization with $$N=50$$ robots, it is suffi
 To plot the results instead
 
       python results.py
+
+ <script type="text/javascript"
+    src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
