@@ -103,7 +103,7 @@ The `Agent` class is meant to represent the local computing units that collabora
 Agents are instantiated by defining their in/out-neighbors and the weights they assign their neighbors. For example, consider the following network
 
 <center>
-<img src="/images/network.png">
+<img src="{{site.url}}/images/network.png">
 </center>
 
 Then, agent 0 is defined as
