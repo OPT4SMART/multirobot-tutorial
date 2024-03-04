@@ -12,6 +12,8 @@ toc: true
 toc_sticky: true
 ---
 
+{% include base_path %}
+
 ## Introduction to DISROPT
 
 
