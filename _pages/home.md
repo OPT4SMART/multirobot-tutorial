@@ -29,7 +29,7 @@ feature_row:
     alt: "ChoiRbot"
     title: "ChoiRbot"
     excerpt: "In this tutorial, we will delve into ChoiRbot basics and the implementation of the 'Task Allocation' scenario using Turtlebot3 and Gazebo simulator."
-    url: "/docs/layouts/"
+    url: "/choirbot"
     btn_class: "btn--primary"
     btn_label: "Learn more"
   - image_path: /images/crazychoir.png
