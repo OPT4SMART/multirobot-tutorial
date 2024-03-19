@@ -9,6 +9,16 @@ defaults:
     values:
 ---
 
+#### ChoiRbot - Basic Usage and Multi-Robot Task Allocation
+
+<img style="float: left; width:40%;" src="{{site.baseurl}}/images/choirbot.png">
+
+In this tutorial, we will see how to implement and run a multi-robot task-allocation scenario into ChoiRbot. We will delve into the main basics of the package, see its main layers and how to modify them to implement custom coordination schemes leveraging external simulation tools as Gazebo. [Click here to proceed](choirbot).
+
+<br>
+<br>
+
+
 #### DISROPT - Basic Usage and Charging of Plug-in Electric Vehicles (PEVs)
 
 <img style="float: left; width:40%;" src="{{site.baseurl}}/images/disropt.jpg">
