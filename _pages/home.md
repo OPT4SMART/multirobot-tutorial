@@ -36,7 +36,7 @@ feature_row:
     alt: "CrazyChoir"
     title: "CrazyChoir"
     excerpt: "In this tutorial, we will delve into CrazyChoir basics and the implementation of the 'Target Surveillance' scenario using Crazyflie and Webots simulator."
-    url: "/docs/license/"
+    url: "/crazychoir"
     btn_class: "btn--primary"
     btn_label: "Learn more"      
 
