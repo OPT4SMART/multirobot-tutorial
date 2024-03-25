@@ -137,7 +137,7 @@ In **DISROPT**, there are many implemented distributed optimization algorithms. 
 for a specific distributed optimization set-up. We refer the reader to the [DISROPT documentation page](https://disropt.readthedocs.io/en/latest/index.html) for a detailed explanation.
 
 
-## Planning of Battery Charging for Electric Robots
+## Planning of Battery Charging for Electric Robots in DISROPT
 
 In the following, we
 consider a charging scheduling problem in a fleet of $$N$$ battery-operated
@@ -183,7 +183,6 @@ $$
   \end{align} 
 $$
 
-## DISROPT implementation
 
 ### Implementation of the optimization problem
 
