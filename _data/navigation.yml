@@ -6,6 +6,8 @@ main:
     url: /tutorial
   - title: "Cite us"
     url: /citeus
+  - title: "Code"
+    url: https://github.com/OPT4SMART/multirobot-tutorial
   # - title: "Sample Posts"
   #   url: /year-archive/
   # - title: "Sample Collections"
